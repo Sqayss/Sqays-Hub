@@ -1,3 +1,84 @@
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
+local VirtualUser = game:GetService("VirtualUser")
+local player = Players.LocalPlayer
+
+local loadstringFn = loadstring or load
+if not loadstringFn then
+    warn("[Sqays] loadstring desteklenmiyor. Executor ayarlarini kontrol et.")
+    return
+end
+
+if not game.HttpGet then
+    warn("[Sqays] HttpGet desteklenmiyor. Executor HTTP isteklerine izin vermiyor olabilir.")
+    return
+end
+
+local rayfieldOk, rayfieldSource = pcall(function()
+    return game:HttpGet("https://sirius.menu/rayfield")
+end)
+
+if not rayfieldOk or type(rayfieldSource) ~= "string" or rayfieldSource == "" then
+    warn("[Sqays] Rayfield indirilemedi. Internet/HTTP ayarlarini kontrol et.")
+    return
+end
+
+local RayfieldLoader = loadstringFn(rayfieldSource)
+if type(RayfieldLoader) ~= "function" then
+    warn("[Sqays] Rayfield kodu yuklenemedi. Link gecersiz veya executor loadstring desteklemiyor.")
+    return
+end
+
+local Rayfield = RayfieldLoader()
+if not Rayfield or type(Rayfield.CreateWindow) ~= "function" then
+    warn("[Sqays] Rayfield baslatilamadi. UI kutuphanesi beklenen sekilde donmedi.")
+    return
+end
+
+-- === CONFIG ===
+local oresFolder = Workspace:WaitForChild("__GAME_CONTENT"):WaitForChild("Ores")
+_G.MiningSpeed = 0.5
+_G.HarvestSpeed = 0.2
+_G.TierSpeed = 0.2
+_G.RuneSpeed = 0.2
+_G.TreeSpeed = 0.2
+_G.IceConvertSpeed = 0.2
+_G.BlazeQuestSpeed = 5
+_G.AutoHarvest = false
+_G.AutoRollTier = false
+_G.AutoHitTree = false
+_G.AutoBlazeQuest = false
+_G.AntiAFK = false
+
+local M2Settings = {}
+local RuneNames = {"Basic", "Super", "Advanced", "Cosmic Prism", "Hacker", "Snowy", "Deepcore"}
+local RuneSettings = {}
+for _, name in ipairs(RuneNames) do RuneSettings[name] = false end
+
+-- === ANTI AFK DONGUSU ===
+player.Idled:Connect(function()
+    if _G.AntiAFK then
+        VirtualUser:Button2Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+    end
+end)
+
+-- === DONGULER ===
+
+-- 1. HARVEST
+task.spawn(function()
+    while true do
+        if _G.AutoHarvest == true then
+            local slots = CollectionService:GetTagged("WheatSlot")
+            for _, slot in ipairs(slots) do
+                if _G.AutoHarvest == false then break end
+                local cd = slot:FindFirstChildOfClass("ClickDetector")
+                if cd and slot:FindFirstChild("5") then
+                    fireclickdetector(cd)
+                end
             end
         end
         task.wait(_G.HarvestSpeed)
