@@ -1,4 +1,3 @@
-
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -142,7 +141,7 @@ local Window = Rayfield:CreateWindow({
 
 -- Mining Tab
 local MiningTab = Window:CreateTab("Mining", 0)
-local OreNames = {"Stone", "Coal", "Copper", "Silver", "Iron", "Gold", "Platinum", "Titanium", "Uranium", "Cobalt"," Palladium", "Ruby", "Aetherite", "Celestium", "Voidsteel", "Infinity"}
+local OreNames = {"Stone", "Coal", "Copper", "Silver", "Iron", "Gold", "Platinum", "Titanium", "Uranium", "Cobalt", "Palladium", "Ruby", "Aetherite", "Celestium", "Voidsteel", "Infinity"}
 for _, name in ipairs(OreNames) do
     M2Settings[name] = false
     MiningTab:CreateToggle({Name = "Mine " .. name, Callback = function(v) M2Settings[name] = v end})
