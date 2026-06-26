@@ -1,1 +1,195 @@
 
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
+local VirtualUser = game:GetService("VirtualUser")
+local player = Players.LocalPlayer
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- === CONFIG ===
+local oresFolder = Workspace:WaitForChild("__GAME_CONTENT"):WaitForChild("Ores")
+_G.MiningSpeed = 0.5
+_G.AutoHarvest = false
+_G.AutoRollTier = false
+_G.AutoHitTree = false
+_G.AutoBlazeQuest = false
+_G.AntiAFK = false
+
+local M2Settings = {} 
+local RuneNames = {"Basic", "Super", "Advanced", "Cosmic Prism", "Hacker", "Snowy", "Deepcore"}
+local RuneSettings = {}
+for _, name in ipairs(RuneNames) do RuneSettings[name] = false end
+
+-- === ANTI AFK DÖNGÜSÜ ===
+player.Idled:Connect(function()
+    if _G.AntiAFK then
+        VirtualUser:Button2Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+    end
+end)
+
+-- === DÖNGÜLER (0.2 Saniye Stabil Hız) ===
+
+-- 1. HARVEST (Hızlı Ama Dengeli)
+task.spawn(function()
+    while true do
+        if _G.AutoHarvest == true then
+            local slots = CollectionService:GetTagged("WheatSlot")
+            for _, slot in ipairs(slots) do
+                if _G.AutoHarvest == false then break end
+                local cd = slot:FindFirstChildOfClass("ClickDetector")
+                if cd and slot:FindFirstChild("5") then
+                    fireclickdetector(cd)
+                end
+            end
+        end
+        task.wait(0.2)
+    end
+end)
+
+-- 2. STABİL TIER ROLL DÖNGÜSÜ
+task.spawn(function()
+    while true do
+        if _G.AutoRollTier then
+            pcall(function()
+                local MainRemote = ReplicatedStorage:FindFirstChild("__Net") and ReplicatedStorage.__Net:FindFirstChild("MainRemote")
+                if MainRemote then
+                    MainRemote:FireServer("RollTier")
+                end
+            end)
+        end
+        task.wait(0.2)
+    end
+end)
+
+-- 3. STABİL RUNE ROLL DÖNGÜSÜ
+task.spawn(function()
+    while true do
+        pcall(function()
+            local MainRemote = ReplicatedStorage:FindFirstChild("__Net") and ReplicatedStorage.__Net:FindFirstChild("MainRemote")
+            if MainRemote then
+                for _, name in ipairs(RuneNames) do
+                    if RuneSettings[name] then
+                        MainRemote:FireServer("RollRune", name)
+                    end
+                end
+            end
+        end)
+        task.wait(0.2)
+    end
+end)
+
+-- 4. STABİL TREE HIT DÖNGÜSÜ
+task.spawn(function()
+    while true do
+        if _G.AutoHitTree then
+            pcall(function()
+                local MainRemote = ReplicatedStorage:FindFirstChild("__Net") and ReplicatedStorage.__Net:FindFirstChild("MainRemote")
+                if MainRemote and player.FEATURES.TREE.IsSpawned.Value then
+                    MainRemote:FireServer("HitTree")
+                end
+            end)
+        end
+        task.wait(0.2)
+    end
+end)
+
+-- 5. BLAZE QUEST DÖNGÜSÜ
+task.spawn(function()
+    while true do
+        if _G.AutoBlazeQuest then
+            pcall(function()
+                local MainRemote = ReplicatedStorage:FindFirstChild("__Net") and ReplicatedStorage.__Net:FindFirstChild("MainRemote")
+                if MainRemote then
+                    MainRemote:FireServer("SetUpgradeAutomationPaused", "Fire", false)
+                    MainRemote:FireServer("Blaze")
+                end
+            end)
+        end
+        task.wait(5)
+    end
+end)
+
+-- 6. MINING
+task.spawn(function()
+    while true do
+        task.wait(_G.MiningSpeed)
+        for name, enabled in pairs(M2Settings) do
+            if enabled then
+                local found = false
+                for _, obj in ipairs(oresFolder:GetChildren()) do
+                    if obj.Name == name and obj:FindFirstChild("Rock") then
+                        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            player.Character.HumanoidRootPart.CFrame = obj:GetPivot() + Vector3.new(0, 5, 0)
+                            found = true
+                            break 
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- === GUI ===
+local Window = Rayfield:CreateWindow({
+    Name = "⚡ Sqays Noob Incremental", 
+    LoadingTitle = "Yükleniyor...", 
+    ConfigurationSaving = {Enabled = true, FileName = "SqaysConfig"}
+})
+
+-- Mining Tab
+local MiningTab = Window:CreateTab("Mining", 0)
+local OreNames = {"Stone", "Coal", "Copper", "Silver", "Iron", "Gold", "Platinum", "Titanium", "Uranium", "Cobalt"," Palladium", "Ruby", "Aetherite", "Celestium", "Voidsteel", "Infinity"}
+for _, name in ipairs(OreNames) do
+    M2Settings[name] = false
+    MiningTab:CreateToggle({Name = "Mine " .. name, Callback = function(v) M2Settings[name] = v end})
+end
+
+-- Roll & Harvest Tab
+local RollTab = Window:CreateTab("Roll & Harvest", 1)
+
+RollTab:CreateSection("Harvest & Quest")
+RollTab:CreateToggle({Name = "Auto Harvest", Callback = function(v) _G.AutoHarvest = v end})
+RollTab:CreateToggle({Name = "Auto Upgrade Quest", Callback = function(v) _G.AutoBlazeQuest = v end})
+
+RollTab:CreateSection("Roll & Tree")
+RollTab:CreateToggle({Name = "Auto Roll Tier", Callback = function(v) _G.AutoRollTier = v end})
+RollTab:CreateToggle({Name = "Auto Hit Tree", Callback = function(v) _G.AutoHitTree = v end})
+
+RollTab:CreateSection("Runes")
+for _, name in ipairs(RuneNames) do
+    RollTab:CreateToggle({Name = "Roll " .. name, Callback = function(v) RuneSettings[name] = v end})
+end
+
+-- Ice Convert Tab
+local IceTab = Window:CreateTab("Ice Convert", "snowflake")
+for i = 1, 12 do
+    IceTab:CreateToggle({
+        Name = "Convert Level " .. i,
+        Callback = function(Value)
+            getgenv()["AutoIce_" .. i] = Value
+            task.spawn(function()
+                while getgenv()["AutoIce_" .. i] do
+                    pcall(function()
+                        local MainRemote = ReplicatedStorage:FindFirstChild("__Net") and ReplicatedStorage.__Net:FindFirstChild("MainRemote")
+                        if MainRemote then MainRemote:FireServer("PressButton", i) end
+                    end)
+                    task.wait(0.2) -- Ice convert de aynı şekilde stabile çekildi
+                end
+            end)
+        end,
+    })
+end
+
+-- Misc Tab
+local MiscTab = Window:CreateTab("Misc", 2)
+MiscTab:CreateSection("Settings")
+MiscTab:CreateDropdown({Name = "Mining Speed", Options = {"0.1", "0.2", "0.5", "1", "2", "3"}, CurrentOption = {"0.5"}, Callback = function(o) _G.MiningSpeed = tonumber(o[1]) end})
+
+MiscTab:CreateSection("Anti-Idle")
+MiscTab:CreateToggle({Name = "Anti AFK (No Jump)", Callback = function(v) _G.AntiAFK = v end})
+
+Rayfield:LoadConfiguration()
